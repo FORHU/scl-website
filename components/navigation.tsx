@@ -10,12 +10,11 @@ export default function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
 
   const navItems = [
-    { label: "Philosophy", href: "/philosophy" },
-    { label: "SCL", href: "/scl" },
+    { label: "SCL", href: "/" },
     { label: "Research", href: "/research" },
-    { label: "Projects", href: "/projects" },
     { label: "About", href: "/about" },
     { label: "Contact", href: "/contact" },
+    { label: "Forhu.ai", href: "https://forhu.ai", external: true },
   ]
 
   return (
@@ -29,13 +28,25 @@ export default function Navigation() {
           {/* Desktop Navigation */}
           <div className="hidden items-center space-x-8 md:flex">
             {navItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                className="text-xs font-bold uppercase tracking-[0.2em] text-white/70 transition-all duration-300 hover:text-accent hover:text-shadow-accent"
-              >
-                {item.label}
-              </a>
+              item.external ? (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-bold uppercase tracking-[0.2em] text-white/50 transition-all duration-300 hover:text-accent hover:text-shadow-accent"
+                >
+                  {item.label}
+                </a>
+              ) : (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  className="text-xs font-bold uppercase tracking-[0.2em] text-white/70 transition-all duration-300 hover:text-accent hover:text-shadow-accent"
+                >
+                  {item.label}
+                </a>
+              )
             ))}
           </div>
 
@@ -64,6 +75,8 @@ export default function Navigation() {
               <a
                 key={item.label}
                 href={item.href}
+                target={item.external ? "_blank" : undefined}
+                rel={item.external ? "noopener noreferrer" : undefined}
                 className="block px-3 py-3 text-base font-light text-muted-foreground hover:text-foreground hover:bg-secondary/30 rounded-md transition-colors"
                 onClick={() => setIsOpen(false)}
               >
