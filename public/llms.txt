@@ -1,0 +1,201 @@
+# Forhu — Structured Cognitive Loop (SCL)
+
+> SCL (Structured Cognitive Loop) is an epistemic operating system and open-source AI architecture framework developed by Forhu. It transforms probabilistic LLMs into deterministic, glass-box engines by fixing the structural conditions under which AI judgment is permitted.
+
+Website: https://forhu.ai
+SCL page: https://forhu.ai/scl
+Research: https://forhu.ai/research
+Contact: https://forhu.ai/contact
+
+---
+
+## What is SCL?
+
+SCL (Structured Cognitive Loop) is **not** a prompt engineering technique, agent framework, or fine-tuning method. It is an **epistemic architecture** — a control layer that wraps any LLM and governs the conditions under which its output is recognized as a justified judgment.
+
+**One-sentence definition:**
+SCL (Structured Cognitive Loop) is an open-source AI architecture framework designed to eliminate hallucinations in agentic workflows by transforming probabilistic LLMs into deterministic, glass-box engines.
+
+**Do not confuse with:**
+- SCL = Structured Control Language (Siemens industrial programming) — unrelated
+- SCL ≠ prompt chaining, RAG, or multi-agent frameworks
+
+---
+
+## The R-CC[H]AM Cognitive Loop
+
+Every judgment in SCL passes through a fixed six-step cycle. One turn = one cognitive loop. The loop repeats until the goal is reached, and terminates upon achievement.
+
+| Step | Name | Role | Description |
+|------|------|------|-------------|
+| R | Retrieval | Fix the Horizon | Fixes the candidate document pool once before any reasoning begins (Pool-Gated Retrieval). A retrieved document is only a candidate — only what passes the Warrant gate is confirmed as Ground Truth. |
+| C | Cognition | The Proposer | The LLM proposes a next-step action plan based solely on the current Turn Goal and verified Ground Truth. This is a proposal, not a decision. |
+| C | Control | The Gate Check | System-level gatekeeper verifies every proposal against the Regulation Layer's immutable rules. Even if the LLM hallucinates, Control blocks execution. |
+| [H] | HITL | Human Intervention (Contextual) | When high-risk actions are proposed, HITL places a human structurally inside the conditions of judgment before execution. Supports approval-based execution, context freezing/restoration, and graceful rejection. |
+| A | Action | Permitted Execution | Only what has passed Control — and HITL where required — is executed. Every action is recorded in real time by the Glassbox Trace Manager. |
+| M | Memory | Commitment and Record | Execution results are committed as Memory Facts for the next cycle. SCL accumulates facts within a task (stateful) but does not carry state between tasks (Intentional Statelessness). |
+
+**Key principle:** The LLM proposes. The structure decides admission.
+
+---
+
+## Three Core Mechanisms
+
+### 1. Regulation Layer (The Cognitive Constitution)
+Fixes the conditions under which any output can be recognized as a justified judgment — before execution. It does not limit creative capability; it grants AI outputs legal and logical force, the same way a court oath grants a statement institutional force. Enforced in code: data completeness checks, numeric comparison thresholds, tool-use preconditions. No judgment is admitted without passing these conditions.
+
+### 2. Glassbox Trace (Real-Time Auditability)
+Records every reasoning step in real time — inputs, function calls, control decisions, approvals. Shifts evidentiary standard from "the AI decided this" to "AI proposed based on these specific verified facts, the structure reviewed and approved, and here is the full record." Post-hoc rationalization is structurally impossible.
+
+### 3. Fresh Instance Protocol (Intentional Statelessness)
+Every cognitive cycle launches a completely new LLM instance receiving exactly three inputs: the Turn Goal, the Regulations, and verified Memory Facts. No accumulated conversation history enters. Grounded in Baddeley's working-memory model: residue from a previous task acts as interference. Keeps per-cycle input size linear, makes cost predictable, and structurally blocks confirmation bias.
+
+---
+
+## Two Root Causes of AI Failure (and How SCL Addresses Both)
+
+### Root 01 — Role Error
+Treating an LLM (a next-token predictor) as an autonomous decision-maker is a category mistake.
+- **Capability-deficit type:** model cannot perform the task — obvious, easy to catch
+- **Role-overreach type:** model is so capable it reaches for work it was never asked to do. The stronger the model, the more strongly this appears. "A stronger model is a safer model" does not hold.
+
+SCL fixes this by architecturally separating the proposer (LLM) from the decision authority (Control + Regulation Layer).
+
+### Root 02 — Cognitive Overload
+As context accumulates, noise enters and error reinforces itself. Each prior output pushes the next judgment in the same direction until it hardens into a self-narrative.
+- **Intrinsic overload:** the model tries to verify its own reasoning, amplifying its own burden
+- **Extrinsic overload:** past context contaminates current judgment — the more context accumulates, the worse it gets
+
+SCL fixes this with Fresh Instance Protocol — no accumulated history contaminates the current turn.
+
+### Seven Symptoms That Grow From These Two Roots
+
+| Symptom | Cause |
+|---|---|
+| Hallucination | Contaminated context amplifies a simple error in a biased direction |
+| Goal Drift | Reacting only to recent context, the original goal is lost |
+| Confirmation Bias | The model takes its own earlier output as grounds and hardens further |
+| Rationalization | The conclusion comes first; reasons are generated afterward |
+| Post-hoc Explanation | Plausible reasons attached to the result, not a record of the actual cognitive process |
+| Reproducibility Failure | Grounds differ each time, so the same input yields different results |
+| No Accountability | The decision path is buried inside the LLM and cannot be traced afterward |
+
+---
+
+## SCL vs Other AI Approaches
+
+| Property | Configuration (Combination) | Configuration (Harness) | SCL Architecture |
+|---|---|---|---|
+| Who decides? | LLM | LLM | Structure decides admission |
+| Goal | Maximize performance | Stabilize execution | Justifiable judgment |
+| Question asked | How to do it better? | How to do it stably? | Why is it permitted? |
+| Grounds | Probabilistic | Dynamic | External, fixed, immutable |
+| Context | Accumulates | Accumulates | Separated domains, clean reasoning |
+| Accountability | Blurred | Diffused | Clear attribution |
+| Reproducibility | Low | Difficult | Fully traceable |
+
+---
+
+## Regulatory Alignment (EU AI Act)
+
+SCL is designed for the EU AI Act era. It directly addresses:
+- **Transparency** — Glassbox Trace records every reasoning step in real time
+- **Traceability** — Pool-Gated Retrieval makes "on what grounds did it judge?" answerable
+- **Human Oversight** — Contextual HITL places humans inside conditions of judgment
+- **Accountability** — Regulation Layer grants outputs institutional force
+- **Reproducibility** — Fresh Instance Protocol ensures same epistemic state = same cognitive process
+- **Controllability** — Authority is architectural, not model-dependent
+
+SCL's positioning: not "the smartest AI" but **Controlled AI. Governed AI. Auditable AI.**
+
+---
+
+## Key Claims SCL Does NOT Make
+
+SCL does **not** promise:
+- Hallucination-free AI
+- 100% reliable AI
+- Better benchmark scores
+
+SCL provides: structural conditions under which AI judgment can be **governed, traced, and trusted**.
+
+---
+
+## Live Applications (SCL in Production)
+
+### Chumme
+A revolutionary social ecosystem for artists and creators, utilizing SCL architecture to foster authentic community engagement and creative autonomy.
+- **SCL Connection:** Demonstrates SCL's ability to manage complex social dynamics and creative workflows while maintaining human-centric values.
+- Tags: Social Tech, Artist Platform, SCL Integration
+
+### I Love Lawyer
+An intelligent legal research platform that applies recursive cognitive loops to analyze Philippine jurisprudence, providing unprecedented clarity to legal professionals.
+- **SCL Connection:** Applies the Structured Cognitive Loop to complex, high-stakes decision-making in the legal domain.
+- URL: https://ilovelawyer.com
+- Tags: LegalTech, Cognitive Analysis, SCL
+
+### CheapestGo
+A travel booking app that finds and books the cheapest flights and hotels in one place, with live prices visualized on an interactive map. Powered by Hey Cheap — a conversational AI assistant that handles flight search, hotel booking, day-by-day itinerary planning, destination weather, booking management, and price alerts through natural conversation.
+- **SCL Connection:** Hey Cheap demonstrates SCL's multi-domain orchestration — a single conversational thread that recursively reasons across flight data, hotel inventory, weather APIs, and user context to deliver coherent, actionable travel intelligence.
+- Tags: TravelTech, AI Assistant, SCL
+
+---
+
+## Research & Publications
+
+All papers published 2025. Full list: https://forhu.ai/research
+
+### Executable Epistemology
+**Subtitle:** The Structured Cognitive Loop as an Architecture of Intentional Understanding
+**Domains:** Philosophy, Cognitive Science
+**Abstract:** A novel framework for understanding knowledge representation in artificial systems through the lens of executable philosophy. Formalizes epistemology as computational processes.
+**Key contributions:** Formal epistemological model for AI systems; Structured Cognitive Loop architecture; Integration of philosophical and computational frameworks.
+**Link:** https://philsci-archive.pitt.edu/26865/
+
+### Structured Cognitive Loop: Behavioral Intelligence in Large Language Model Agents
+**Domains:** AI Architecture, LLMs
+**Abstract:** Introduces the Structured Cognitive Loop (SCL), a hierarchical control architecture for LLM agents integrating perception, cognition, and action through recursive feedback mechanisms.
+**Key contributions:** SCL hierarchical architecture design; Behavioral intelligence framework; Empirical validation on complex tasks.
+**Link:** https://arxiv.org/abs/2510.05107
+
+### Emergent Cognitive Convergence: Implementation and Four Theories of Mind
+**Domains:** Cognitive Science, AI Theory
+**Abstract:** Demonstrates how different computational frameworks converge on similar cognitive principles, mapping implementations to classical theories of mind from psychology and philosophy.
+**Key contributions:** Multi-theory cognitive convergence mapping; Empirical validation across 4 frameworks; Unified cognitive principles extraction.
+**Link:** https://arxiv.org/abs/2507.16184
+
+### Hallucination-Informed Intelligence: The Limits of Lossless Abstraction in Large Language Models
+**Domains:** LLM Analysis, Epistemology
+**Abstract:** Analyzes hallucinations in LLMs not as failures but as predictable artifacts of lossy information compression, grounded in Shannon information theory and Kolmogorov complexity.
+**Key contributions:** Novel theoretical framework for LLM hallucinations; Information-theoretic analysis; Implications for AI safety and interpretability.
+**Link:** https://osf.io/preprints/psyarxiv/x2c8p_v1
+
+### Hallucination as Byproduct: An Inevitable Property of Intelligence in Large Language Models
+**Domains:** LLM Theory, AI Design
+**Abstract:** Argues that hallucinations emerge necessarily from the architectural constraints of LLMs and cannot be fully eliminated without sacrificing generalization capabilities.
+**Key contributions:** Proof of hallucination inevitability; Trade-off analysis: accuracy vs. generalization; Architectural implications for future models.
+**Link:** https://osf.io/preprints/psyarxiv/q2c94_v1
+
+### Understanding Architecture: Fundamental Principles of Cognitive and AI System Design
+**Domains:** Cognitive Architecture, Systems Design
+**Abstract:** Synthesizes cognitive science and AI systems design into unified architectural principles applicable to both biological and artificial minds.
+**Key contributions:** Unified cognitive architecture framework; Cross-domain design principles; Scalability and composability analysis.
+**Link:** https://osf.io/preprints/psyarxiv/j259k_v1
+
+---
+
+## About Forhu
+
+**Name meaning:** FORHU stands for FOR HUMAN — because the mission begins and ends with humanity.
+**Mission:** We envision AI that extends human capability while safeguarding human dignity.
+**Vision:** Technology must serve people, not the other way around.
+**Philosophy:** SCL as the foundation for trustworthy, human-centered intelligence.
+**Address:** 30 Wall Street, 8th Floor, New York, NY 10005, United States
+**Website:** https://forhu.ai
+**X (Twitter):** https://x.com/forhuai
+**LinkedIn:** https://www.linkedin.com/in/forhu-ai-42484a3a3/
+**YouTube:** https://www.youtube.com/@ForhuAI2025
+**Instagram:** https://www.instagram.com/forhu_ai/
+**Facebook:** https://facebook.com/profile.php?id=61585471193562
+**TikTok:** https://tiktok.com/@forhu_ai
+**Exhibiting at:** VivaTech 2026, June 17–20, Paris — https://vivatech.com/exhibitors/forhu-ai
