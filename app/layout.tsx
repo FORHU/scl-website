@@ -48,19 +48,19 @@ export const metadata: Metadata = {
         url: "/forhu.ico.png",
         width: 1200,
         height: 630,
-        alt: "Forhu — Structured Cognitive Loop",
+        alt: "SCL — Structured Cognitive Loop",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Forhu — Structured Cognitive Loop",
+    title: "SCL — Structured Cognitive Loop",
     description:
-      "Advancing AI research and education through the Structured Cognitive Loop (SCL).",
+      "An epistemic operating system that fixes the conditions of justification structurally — where the LLM proposes, and the structure decides admission.",
     images: ["/forhu.ico.png"],
   },
   alternates: {
-    canonical: "https://forhu.ai",
+    canonical: "https://scl.institute",
   },
   icons: {
     icon: [
@@ -89,50 +89,36 @@ const organizationLd = {
 const webPageLd = {
   "@context": "https://schema.org",
   "@type": "WebPage",
-  name: "Forhu — Structured Cognitive Loop",
-  url: "https://forhu.ai",
+  name: "SCL — Structured Cognitive Loop",
+  url: "https://scl.institute",
   description:
-    "Advancing AI research and education through the Structured Cognitive Loop (SCL) — a recursive, human-centric cognitive architecture.",
+    "The Structured Cognitive Loop (SCL) is an epistemic operating system that transforms probabilistic LLMs into deterministic, glass-box engines through the R-CC[H]AM Cognitive Loop.",
   hasPart: [
     {
       "@type": "WebPageElement",
-      name: "Philosophy",
-      url: "https://forhu.ai/#philosophy",
+      name: "R-CC[H]AM Cognitive Loop",
+      url: "https://scl.institute/#loop",
       description:
-        "Forhu's foundational philosophy behind human-centric AI development and the principles driving the Structured Cognitive Loop.",
-    },
-    {
-      "@type": "WebPageElement",
-      name: "Structured Cognitive Loop (SCL)",
-      url: "https://forhu.ai/#scl",
-      description:
-        "The Structured Cognitive Loop (SCL) — a recursive, hierarchical cognitive architecture for AI agents that integrates perception, cognition, and action through feedback mechanisms.",
+        "The six-step cognitive loop — Retrieval, Cognition, Control, HITL, Action, Memory — that structures every AI judgment in SCL.",
     },
     {
       "@type": "WebPageElement",
       name: "Research & Publications",
-      url: "https://forhu.ai/#research",
+      url: "https://scl.institute/research",
       description:
         "Peer-reviewed research and preprints on cognitive architecture, AI hallucination, and the Structured Cognitive Loop published by Forhu.",
     },
     {
       "@type": "WebPageElement",
-      name: "Projects",
-      url: "https://forhu.ai/#projects",
+      name: "About",
+      url: "https://scl.institute/about",
       description:
-        "Real-world applications of the Structured Cognitive Loop including Chumme and I Love Lawyer.",
-    },
-    {
-      "@type": "WebPageElement",
-      name: "About Forhu",
-      url: "https://forhu.ai/#about",
-      description:
-        "About Forhu — the team advancing AI research and education through the Structured Cognitive Loop.",
+        "About Forhu and the team behind the Structured Cognitive Loop.",
     },
     {
       "@type": "WebPageElement",
       name: "Contact",
-      url: "https://forhu.ai/#contact",
+      url: "https://scl.institute/contact",
       description: "Get in touch with the Forhu team.",
     },
   ],
