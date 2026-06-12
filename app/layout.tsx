@@ -2,10 +2,10 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Geist, Geist_Mono, Poppins } from "next/font/google"
 import Script from "next/script"
-import ShaderBackgroundWrapper from "@/components/shader-background-wrapper"
-import Navigation from "@/components/navigation"
+import DocLayout from "@/components/doc-layout"
 import Footer from "@/components/footer"
 import GlowSpheres from "@/components/glow-spheres"
+import { ThemeToggle } from "@/components/theme-toggle"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -130,7 +130,15 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark" style={{ background: "#0d0d0d" }} suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning>
+      <head>
+        {/* No-flash theme script — runs before first paint */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='light'||(t==null&&!d)){document.documentElement.classList.remove('dark')}else{document.documentElement.classList.add('dark')}}catch(e){}})()`,
+          }}
+        />
+      </head>
       <body
         className={`font-sans antialiased text-foreground ${poppins.variable}`}
         suppressHydrationWarning
@@ -162,10 +170,12 @@ export default function RootLayout({
         </Script>
 
         <GlowSpheres />
+        <ThemeToggle />
 
-        <Navigation />
-        {children}
-        <Footer />
+        <DocLayout>
+          {children}
+          <Footer />
+        </DocLayout>
       </body>
     </html>
   )

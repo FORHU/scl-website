@@ -1,337 +1,240 @@
-﻿'use client'
+"use client"
 
-import { useState, useEffect, useRef } from 'react'
-import { motion, useMotionValue, useSpring, useTransform, AnimatePresence } from 'framer-motion'
+import { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 
-interface BrainRegion {
-  id: string
-  label: string
-  role: string
-  function: string
-}
-
-interface GlowEffect {
-  regionId: string
-  x: number
-  y: number
-}
-
-const brainRegions: BrainRegion[] = [
+const steps = [
   {
-    id: 'judgment',
-    label: 'Judgment',
-    role: 'Thinking & Problem Solving',
-    function: 'Core reasoning, evaluation, and decision-making. Conducts inference, logical processing, and multi-step problem solving.'
+    id: "retrieval",
+    label: "R",
+    title: "Retrieval",
+    role: "Fix the Horizon",
+    optional: false,
+    receives: "Turn Goal + document corpus",
+    does: "Fixes the candidate document pool once before any reasoning begins (Pool-Gated Retrieval). A retrieved document is only a candidate — it must pass the Warrant gate and meet threshold conditions to become Ground Truth.",
+    outputs: "Verified Ground Truth facts",
+    blocks: "Documents that fail the Warrant gate or threshold conditions. They remain candidates — never Ground Truth.",
   },
   {
-    id: 'memory',
-    label: 'Memory',
-    role: 'Human Memory',
-    function: 'Stores structured information and past states. Provides stability, historical context, and factual grounding.'
+    id: "cognition",
+    label: "C",
+    title: "Cognition",
+    role: "The Proposer",
+    optional: false,
+    receives: "Turn Goal + Verified Ground Truth only",
+    does: "The LLM proposes the next-step action plan. Critically, this is a proposal — not a decision. The authority to judge has moved from the LLM to the structure. No conversation history enters.",
+    outputs: "Proposed action plan → forwarded to Control",
+    blocks: "Nothing. Cognition can only propose. It has no execution authority and cannot admit its own output.",
   },
   {
-    id: 'control',
-    label: 'Control',
-    role: 'Attention',
-    function: 'Directs focus and regulates the cognitive flow. Selects tasks, manages priorities, and prevents duplication or error.'
+    id: "control",
+    label: "C",
+    title: "Control",
+    role: "The Gate Check",
+    optional: false,
+    receives: "Proposed action plan from Cognition",
+    does: "Verifies the proposal against the Regulation Layer's immutable rules: data completeness checks, numeric comparison thresholds, formal logic compliance in code. This is SCL's structural brake.",
+    outputs: "Approved plan → forwarded to HITL or Action",
+    blocks: "Any proposal that fails regulation checks. Execution is blocked regardless of how plausible the LLM's reasoning appears.",
   },
   {
-    id: 'runtime',
-    label: 'Runtime',
-    role: 'Perception',
-    function: 'Executes actions and interacts with the external world. Gathers information, triggers tools or APIs, and updates internal states.'
+    id: "hitl",
+    label: "[H]",
+    title: "HITL",
+    role: "Human Intervention",
+    optional: true,
+    receives: "Control-approved plan flagged as high-risk",
+    does: "Places a human structurally inside the conditions of judgment before execution. Supports approval-based execution, context freezing and restoration, and graceful rejection handling.",
+    outputs: "Human-confirmed plan → forwarded to Action",
+    blocks: "Execution is blocked until the human confirms. If rejected, the context is frozen and the cycle terminates cleanly.",
   },
   {
-    id: 'metaprompt',
-    label: 'Metaprompt',
-    role: 'Human Intelligence',
-    function: 'Governs goals, rules, strategies, and high-level planning. Provides direction, constraints, ethics, and behavioral coherence.'
-  }
+    id: "action",
+    label: "A",
+    title: "Action",
+    role: "Permitted Execution",
+    optional: false,
+    receives: "Fully approved plan (Control + HITL if required)",
+    does: "Executes the approved action. The Glassbox Trace Manager records every input, function call, and approval decision in real time — producing a true record of the judgment path.",
+    outputs: "Execution result + complete audit trace (Glassbox record)",
+    blocks: "Nothing reaches this stage without passing Control. Post-hoc rationalization is structurally impossible.",
+  },
+  {
+    id: "memory",
+    label: "M",
+    title: "Memory",
+    role: "Commitment and Record",
+    optional: false,
+    receives: "Execution result from Action",
+    does: "Commits result as a Memory Fact — verified, structured, immutable for this cognitive cycle. Fresh Instance Protocol prevents cross-task contamination: each new cycle starts from exactly three inputs.",
+    outputs: "Memory Facts → serve as Verified Ground Truth for the next R-CC[H]AM cycle",
+    blocks: "Unverified results are not committed. Intentional Statelessness ensures each task starts clean.",
+  },
 ]
 
-// Approximate coordinates for clickable regions on the brain image
-const regionCoordinates: Record<string, { x: number; y: number; radius: number }> = {
-  judgment: { x: 42, y: 28, radius: 12 },
-  control: { x: 68, y: 30, radius: 12 },
-  memory: { x: 38, y: 48, radius: 11 },
-  runtime: { x: 62, y: 52, radius: 12 },
-  metaprompt: { x: 50, y: 65, radius: 13 }
-}
+const detailFields = [
+  { key: "receives" as const, label: "Receives" },
+  { key: "does" as const, label: "Does" },
+  { key: "outputs" as const, label: "Outputs" },
+  { key: "blocks" as const, label: "Blocks when" },
+]
 
-// Approximate coordinates for the words in the brain image (as percentages)
-const wordLocations: Record<string, { x: number; y: number; radius: number }> = {
-  judgment: { x: 42, y: 28, radius: 12 },
-  control: { x: 68, y: 30, radius: 12 },
-  memory: { x: 38, y: 48, radius: 11 },
-  runtime: { x: 62, y: 52, radius: 12 },
-  metaprompt: { x: 50, y: 65, radius: 13 }
-}
-
-// Text label positions and styling configuration
-const textLabels: Record<string, { x: number; y: number; label: string }> = {
-  judgment: { x: 42, y: 28, label: 'Judgment' },
-  memory: { x: 38, y: 48, label: 'Memory' },
-  control: { x: 68, y: 30, label: 'Control' },
-  runtime: { x: 62, y: 52, label: 'Runtime' },
-  metaprompt: { x: 50, y: 65, label: 'Metaprompt' }
-}
-
-const brainImageUrl = "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/BRAIN1-QhdBYgaBYxYloew4GF20YmVKRLyUJp.png"
-
-export default function SCLBrainVisualization() {
-  const [selectedRegion, setSelectedRegion] = useState<string>('judgment')
-  const [isAnimating, setIsAnimating] = useState(false)
-  const [glowEffects, setGlowEffects] = useState<GlowEffect[]>([])
-  const [activeButton, setActiveButton] = useState<string>('judgment')
-  const [animationKey, setAnimationKey] = useState(0)
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  // 3D Tilt Logic
-  const mouseX = useMotionValue(0)
-  const mouseY = useMotionValue(0)
-
-  const springConfig = { stiffness: 150, damping: 20 }
-  const rotateX = useSpring(useTransform(mouseY, [-0.5, 0.5], [15, -15]), springConfig)
-  const rotateY = useSpring(useTransform(mouseX, [-0.5, 0.5], [-15, 15]), springConfig)
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!containerRef.current) return
-    const rect = containerRef.current.getBoundingClientRect()
-    const x = (e.clientX - rect.left) / rect.width - 0.5
-    const y = (e.clientY - rect.top) / rect.height - 0.5
-    mouseX.set(x)
-    mouseY.set(y)
-  }
-
-  const handleMouseLeave = () => {
-    mouseX.set(0)
-    mouseY.set(0)
-  }
-
-  const selected = brainRegions.find(r => r.id === selectedRegion)
+export default function RCCHAMPipeline() {
+  const [selected, setSelected] = useState<string>("retrieval")
+  const [isDark, setIsDark] = useState(true)
 
   useEffect(() => {
-    setIsAnimating(true)
-    const timer = setTimeout(() => setIsAnimating(false), 300)
-    return () => clearTimeout(timer)
-  }, [selectedRegion])
+    const check = () => setIsDark(document.documentElement.classList.contains("dark"))
+    check()
+    const obs = new MutationObserver(check)
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] })
+    return () => obs.disconnect()
+  }, [])
 
-  const handleRegionClick = (regionId: string, event: React.MouseEvent) => {
-    event.preventDefault()
-    setSelectedRegion(regionId)
-    setActiveButton(regionId)
-    setAnimationKey(prev => prev + 1)
-  }
-
-  const handleHotspotClick = (regionId: string, x: number, y: number) => {
-    setActiveButton(regionId)
-    setSelectedRegion(regionId)
-    setAnimationKey(prev => prev + 1)
-  }
-
-  const handleLabelClick = (labelId: string) => {
-    console.log("[v0] Label clicked:", labelId)
-    setActiveButton(labelId)
-    setSelectedRegion(labelId)
-    setAnimationKey(prev => prev + 1)
-  }
+  const selectedStep = steps.find((s) => s.id === selected)!
 
   return (
-    <section id="scl" className="relative py-12 sm:py-24 px-4 sm:px-6 bg-gradient-to-b from-background via-card to-background overflow-hidden">
-      {/* Background glow animations */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[500px] h-[500px] sm:w-[900px] sm:h-[900px] bg-accent/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 right-0 w-[300px] h-[300px] sm:w-[700px] sm:h-[700px] bg-gradient-to-tl from-accent/5 to-transparent rounded-full blur-3xl"></div>
-      </div>
+    <section className="relative py-16 sm:py-24 px-4 sm:px-6 border-t border-white/8 bg-background/60">
+      <div className="max-w-5xl mx-auto">
 
-      <div className="relative z-10 max-w-7xl mx-auto">
-        {/* Section header */}
-        <div className="text-center mb-10 sm:mb-16">
-          <h2 className="text-4xl sm:text-6xl md:text-7xl font-bold text-accent mb-4 tracking-tighter">
-            Structured Cognitive Loop
-          </h2>
-          <p className="text-xl sm:text-2xl text-foreground font-medium">The Brain Behind SCL</p>
-          <p className="text-base sm:text-lg text-muted-foreground mt-4 px-4">
-            Click on each brain region to explore its role in intelligent reasoning
+        {/* Header */}
+        <div className="mb-10">
+          <p className="text-[10px] font-mono uppercase tracking-widest text-accent/70 mb-2">Interactive Pipeline</p>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">R-CC[H]AM Gate Flow</h2>
+          <p className="text-sm text-muted-foreground max-w-xl">
+            Every judgment passes through this sequence. Each gate can block the next. Click any step to inspect what it receives, does, outputs, and blocks.
           </p>
         </div>
 
-        {/* Main interactive section */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 sm:gap-12 items-center">
-          {/* Brain image with interactive overlay */}
-          <div className="lg:col-span-2 flex justify-center order-1">
-            <motion.div 
-              ref={containerRef}
-              onMouseMove={handleMouseMove}
-              onMouseLeave={handleMouseLeave}
-              style={{ 
-                rotateX, 
-                rotateY, 
-                perspective: 1000,
-                transformStyle: "preserve-3d" 
-              }}
-              className="relative w-full max-w-[300px] sm:max-w-sm transition-shadow duration-500"
-            >
-              {/* Outer Bloom Effect */}
-              <div
-                className="absolute inset-0 bg-accent/10 rounded-full blur-[80px] z-0"
-                style={{ transform: "translateZ(-50px)" }}
-              />
+        {/* Pipeline nodes */}
+        <div className="relative mb-8">
+          {/* Connector line behind nodes */}
+          <div className={`absolute top-1/2 left-0 right-0 h-px -translate-y-1/2 hidden sm:block ${isDark ? "bg-white/8" : "bg-black/10"}`} />
 
-              <img
-                src={brainImageUrl || "/placeholder.svg"}
-                alt="Interactive brain diagram"
-                loading="lazy"
-                decoding="async"
-                className="w-full h-auto relative z-10"
-                style={{ transform: "translateZ(20px)" }}
-              />
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-0 relative">
+            {steps.map((step, idx) => {
+              const isSelected = selected === step.id
+              const isOptional = step.optional
 
-              <div className="absolute inset-0 w-full h-full" style={{ transform: "translateZ(40px)" }}>
-                {Object.entries(textLabels).map(([regionId, labelData]) => (
+              return (
+                <div key={step.id} className="flex items-center flex-1 min-w-0">
+                  {/* Node button */}
                   <button
-                    key={regionId}
-                    onClick={() => handleLabelClick(regionId)}
-                    className={`absolute px-2 py-1 sm:px-3 sm:py-1.5 md:px-4 md:py-2 font-sans text-sm sm:text-base md:text-lg font-bold transition-colors duration-200 cursor-pointer active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-accent rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center ${
-                      activeButton === regionId ? 'text-white' : 'text-accent/80 hover:text-accent'
+                    onClick={() => setSelected(step.id)}
+                    className={`relative flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl border transition-all duration-200 w-full sm:w-auto sm:flex-1 group ${
+                      isSelected
+                        ? isOptional
+                          ? "border-yellow-400/50 bg-yellow-400/10 shadow-lg shadow-yellow-400/10"
+                          : "border-accent/50 bg-accent/10 shadow-lg shadow-accent/10"
+                        : "border-white/8 bg-white/[0.03] hover:border-white/20 hover:bg-white/[0.06]"
                     }`}
-                    style={{
-                      left: `${labelData.x}%`,
-                      top: `${labelData.y}%`,
-                      transform: 'translate(-50%, -50%)',
-                      background: 'transparent',
-                      border: 'none',
-                      whiteSpace: 'nowrap',
-                      zIndex: 20,
-                    }}
-                    aria-pressed={activeButton === regionId}
-                    aria-label={`${labelData.label} brain region`}
-                    type="button"
                   >
-                    {labelData.label}
+                    {/* Optional badge */}
+                    {isOptional && (
+                      <span className="absolute -top-2 left-1/2 -translate-x-1/2 text-[8px] font-bold uppercase tracking-wider text-yellow-400 border border-yellow-400/30 bg-background rounded px-1.5 py-px whitespace-nowrap">
+                        optional
+                      </span>
+                    )}
+
+                    {/* Step letter */}
+                    <span className={`text-lg sm:text-xl font-black leading-none transition-colors ${
+                      isSelected
+                        ? isOptional ? "text-yellow-400" : "text-accent"
+                        : isDark ? "text-white/30 group-hover:text-white/60" : "text-black/30 group-hover:text-black/60"
+                    }`}>
+                      {step.label}
+                    </span>
+
+                    {/* Step name */}
+                    <span className={`text-[10px] font-medium uppercase tracking-wider whitespace-nowrap transition-colors ${
+                      isSelected ? "text-foreground" : "text-muted-foreground/50"
+                    }`}>
+                      {step.title}
+                    </span>
+
+                    {/* Active dot */}
+                    {isSelected && (
+                      <span className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full ${isOptional ? "bg-yellow-400" : "bg-accent"}`} />
+                    )}
                   </button>
-                ))}
+
+                  {/* Arrow */}
+                  {idx < steps.length - 1 && (
+                    <div className="hidden sm:flex items-center justify-center w-6 shrink-0">
+                      <svg width="20" height="10" viewBox="0 0 20 10" fill="none">
+                        <path d="M0 5 H16 M12 1 L18 5 L12 9" stroke={isDark ? "rgba(255,255,255,0.15)" : "rgba(0,0,0,0.2)"} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Loop back indicator */}
+          <div className="hidden sm:flex items-center gap-2 mt-3 justify-end">
+            <svg width="180" height="18" viewBox="0 0 180 18">
+              <path d="M170 2 C170 2, 175 2, 175 9 C175 16, 170 16, 10 16 C4 16, 4 16, 4 9 C4 2, 10 2, 10 2"
+                fill="none" stroke="rgba(255,106,45,0.2)" strokeWidth="1" strokeDasharray="3 3" />
+              <path d="M12 0 L6 4 L12 8" fill="none" stroke="rgba(255,106,45,0.3)" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <span className="text-[9px] font-mono uppercase tracking-widest text-accent/30">loop · next turn</span>
+          </div>
+        </div>
+
+        {/* Detail panel */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={selected}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.25 }}
+            className={`rounded-2xl border p-6 sm:p-8 ${
+              selectedStep.optional
+                ? "border-yellow-400/20 bg-yellow-400/[0.04]"
+                : isDark ? "border-white/8 bg-white/[0.04]" : "border-black/10 bg-black/[0.03]"
+            }`}
+          >
+            {/* Step header */}
+            <div className="flex items-start justify-between gap-4 mb-6 pb-5 border-b border-white/8">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`text-2xl font-black ${selectedStep.optional ? "text-yellow-400" : "text-accent"}`}>
+                    {selectedStep.label}
+                  </span>
+                  <span className="text-xl font-bold text-foreground">{selectedStep.title}</span>
+                  {selectedStep.optional && (
+                    <span className="text-[9px] font-bold uppercase tracking-wider text-yellow-400 border border-yellow-400/30 rounded px-1.5 py-0.5">
+                      Contextual
+                    </span>
+                  )}
+                </div>
+                <p className={`text-xs font-mono uppercase tracking-widest ${selectedStep.optional ? "text-yellow-400/60" : "text-accent/60"}`}>
+                  {selectedStep.role}
+                </p>
               </div>
+              <span className="text-[10px] font-mono text-muted-foreground/30 shrink-0 mt-1">
+                Step {steps.findIndex(s => s.id === selected) + 1} / 6
+              </span>
+            </div>
 
-              <svg
-                className="absolute inset-0 w-full h-full cursor-pointer"
-                viewBox="0 0 100 100"
-                preserveAspectRatio="xMidYMid meet"
-                aria-label="Interactive hotspots for brain regions"
-                style={{ transform: "translateZ(41px)" }}
-              >
-                {Object.entries(wordLocations).map(([regionId, coords]) => (
-                  <circle
-                    key={regionId}
-                    cx={coords.x}
-                    cy={coords.y}
-                    r={coords.radius}
-                    fill="transparent"
-                    className="hover:fill-[rgba(255,235,59,0.05)] transition-all duration-200"
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => handleHotspotClick(regionId, coords.x, coords.y)}
-                  />
-                ))}
-              </svg>
+            {/* Four fields */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {detailFields.map((field) => (
+                <div key={field.key} className="space-y-1.5">
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground/40">
+                    {field.label}
+                  </p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {selectedStep[field.key]}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        </AnimatePresence>
 
-              <svg
-                className="absolute inset-0 w-full h-full cursor-pointer"
-                viewBox="0 0 100 100"
-                preserveAspectRatio="xMidYMid meet"
-                style={{ transform: "translateZ(42px)" }}
-              >
-                <defs>
-                  <style>
-                    {`
-                      .brain-region {
-                        fill: transparent;
-                        transition: all 0.3s ease;
-                      }
-                      .brain-region:hover {
-                        fill: var(--accent);
-                        opacity: 0.1;
-                      }
-                      .brain-region.active {
-                        fill: var(--accent);
-                        opacity: 0.15;
-                        filter: drop-shadow(0 0 8px var(--accent));
-                      }
-                    `}
-                  </style>
-                </defs>
-
-                {brainRegions.map((region) => {
-                  const coords = regionCoordinates[region.id]
-                  return (
-                    <circle
-                      key={region.id}
-                      cx={coords.x}
-                      cy={coords.y}
-                      r={coords.radius}
-                      className="brain-region"
-                      onClick={(e) => handleRegionClick(region.id, e)}
-                    />
-                  )
-                })}
-              </svg>
-            </motion.div>
-          </div>
-
-          {/* Info panel */}
-          <div className="lg:col-span-3 order-2">
-            <AnimatePresence mode="wait">
-              {selected && (
-                <motion.div
-                  key={selected.id}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
-                  className="space-y-5"
-                >
-                  {/* Title */}
-                  <div>
-                    <p className="text-accent text-[10px] font-bold uppercase tracking-[0.35em] mb-2">
-                      SCL Component
-                    </p>
-                    <h3 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight leading-none">
-                      {selected.label}
-                    </h3>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-3 sm:gap-4">
-                    {/* Role */}
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.09] backdrop-blur-md p-5 sm:p-6 shadow-lg shadow-black/20">
-                      <p className="text-white/40 text-[10px] font-bold uppercase tracking-[0.3em] mb-3">
-                        Role
-                      </p>
-                      <p className="text-xl sm:text-2xl font-bold text-white leading-tight tracking-tight">
-                        {selected.role}
-                      </p>
-                    </div>
-
-                    {/* Function */}
-                    <div className="rounded-2xl border border-white/10 bg-white/[0.09] backdrop-blur-md p-5 sm:p-6 shadow-lg shadow-black/20">
-                      <p className="text-white/40 text-[10px] font-bold uppercase tracking-[0.3em] mb-3">
-                        Function
-                      </p>
-                      <p className="text-white/80 text-sm sm:text-base leading-relaxed">
-                        {selected.function}
-                      </p>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-
-        {/* Footer caption */}
-        <div className="text-center mt-8 sm:mt-12">
-          <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed px-4">
-            Explore the Cognitive Roles of the Structured Cognitive Loop.
-          </p>
-        </div>
       </div>
     </section>
   )

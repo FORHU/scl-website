@@ -133,7 +133,7 @@ function PairLine({
 
 // ── main scene ─────────────────────────────────────────────────────────────
 function Scene({
-  selectedMinskyId, selectedSclId, onSelectPair,
+  selectedMinskyId, selectedSclId, selectionSource, onSelectPair,
   minskyLayers, sclComponents,
 }: SclComparison3DProps) {
   const positions = useMemo(() => minskyLayers.map((_, i) => {
@@ -172,9 +172,8 @@ function Scene({
       {/* Minsky nodes (inner ring) */}
       {minskyLayers.map((mn, i) => {
         const scl      = getSCL(mn.id)
-        const isActive  = selectedMinskyId === mn.id
-        const isRelated = !isActive && selectedSclId === scl?.id
-        const isFaded   = hasSelection && !isActive && !isRelated
+        const isActive  = selectionSource === "minsky" && selectedMinskyId === mn.id
+        const isFaded   = hasSelection && !isActive
         return (
           <NodeSphere
             key={mn.id}
@@ -183,7 +182,7 @@ function Scene({
             glowColor="#ff6a2d"
             labelColor="#ff6a2d"
             isActive={isActive}
-            isRelated={isRelated}
+            isRelated={false}
             isFaded={isFaded}
             label={mn.label}
             onClick={() => scl && onSelectPair(mn.id, scl.id, "minsky")}
@@ -196,9 +195,8 @@ function Scene({
         const minskyIdx = minskyLayers.findIndex(m => m.id === scl.minkskyLayerId)
         if (minskyIdx < 0) return null
         const mn        = minskyLayers[minskyIdx]
-        const isActive  = selectedSclId === scl.id
-        const isRelated = !isActive && selectedMinskyId === scl.minkskyLayerId
-        const isFaded   = hasSelection && !isActive && !isRelated
+        const isActive  = selectionSource === "scl" && selectedSclId === scl.id
+        const isFaded   = hasSelection && !isActive
         return (
           <NodeSphere
             key={scl.id}
@@ -207,7 +205,7 @@ function Scene({
             glowColor="#c89860"
             labelColor="#e0b870"
             isActive={isActive}
-            isRelated={isRelated}
+            isRelated={false}
             isFaded={isFaded}
             label={scl.label}
             onClick={() => onSelectPair(mn.id, scl.id, "scl")}
