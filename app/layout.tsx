@@ -2,10 +2,10 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Geist, Geist_Mono, Poppins } from "next/font/google"
 import Script from "next/script"
-import ShaderBackgroundWrapper from "@/components/shader-background-wrapper"
-import Navigation from "@/components/navigation"
+import DocLayout from "@/components/doc-layout"
 import Footer from "@/components/footer"
 import GlowSpheres from "@/components/glow-spheres"
+import { ThemeToggle } from "@/components/theme-toggle"
 import "./globals.css"
 
 const _geist = Geist({ subsets: ["latin"] })
@@ -17,29 +17,32 @@ const poppins = Poppins({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://forhu.ai"),
+  metadataBase: new URL("https://scl.institute"),
   title: {
-    default: "Forhu — Structured Cognitive Loop",
-    template: "%s | Forhu",
+    default: "SCL — Structured Cognitive Loop",
+    template: "%s | SCL",
   },
   description:
-    "Advancing AI research and education through the Structured Cognitive Loop (SCL) — a recursive, human-centric cognitive architecture.",
+    "The Structured Cognitive Loop (SCL) is an epistemic operating system that transforms probabilistic LLMs into deterministic, glass-box engines through the R-CC[H]AM Cognitive Loop.",
   keywords: [
-    "AI research",
     "Structured Cognitive Loop",
     "SCL",
+    "epistemic operating system",
+    "R-CCHAM",
     "cognitive architecture",
-    "AI education",
+    "AI agents",
+    "glass-box AI",
+    "hallucination governance",
     "Forhu",
   ],
   authors: [{ name: "Forhu", url: "https://forhu.ai" }],
   openGraph: {
     type: "website",
-    url: "https://forhu.ai",
-    title: "Forhu — Structured Cognitive Loop",
+    url: "https://scl.institute",
+    title: "SCL — Structured Cognitive Loop",
     description:
-      "Advancing AI research and education through the Structured Cognitive Loop (SCL).",
-    siteName: "Forhu",
+      "An epistemic operating system that fixes the conditions of justification structurally — where the LLM proposes, and the structure decides admission.",
+    siteName: "SCL by Forhu",
     images: [
       {
         url: "/forhu.ico.png",
@@ -141,7 +144,15 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark" style={{ background: "#0d0d0d" }} suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning>
+      <head>
+        {/* No-flash theme script — runs before first paint */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;if(t==='light'||(t==null&&!d)){document.documentElement.classList.remove('dark')}else{document.documentElement.classList.add('dark')}}catch(e){}})()`,
+          }}
+        />
+      </head>
       <body
         className={`font-sans antialiased text-foreground ${poppins.variable}`}
         suppressHydrationWarning
@@ -173,10 +184,12 @@ export default function RootLayout({
         </Script>
 
         <GlowSpheres />
+        <ThemeToggle />
 
-        <Navigation />
-        {children}
-        <Footer />
+        <DocLayout>
+          {children}
+          <Footer />
+        </DocLayout>
       </body>
     </html>
   )
